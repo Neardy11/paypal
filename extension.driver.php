@@ -267,7 +267,7 @@
 
 			} else {
 
-				$baseUrl = 'http://jci.dev/maze/extension/paypal/consent';
+				$baseUrl = SYMPHONY_URL . '/extension/paypal/consent';
 				// ### Get User Consent URL
 				// The clientId is stored in the bootstrap file
 				//Get Authorization URL returns the redirect URL that could be used to get user's consent

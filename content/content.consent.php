@@ -64,34 +64,3 @@ echo "<script>
 	window.close();
 </script>";die;
 
-	Class contentExtensionPaypalConsent extends AdministrationPage {
-
-		private $articleSections = array();
-		private $articleSectionHandle = array();
-		private $articleSubsections = array();
-
-		private $weekday = array(
-			'0'=>'Sunday',
-			'1'=>'Monday',
-			'2'=>'Tuesday',
-			'3'=>'Wednesday',
-			'4'=>'Thursday',
-			'5'=>'Friday',
-			'6'=>'Saturday',
-		);
-			
-		private $fields = array();
-
-		function __construct(){
-			parent::__construct();
-		}
-
-
-		public function __viewIndex() {
-			$this->setPageType('table');
-			$this->setTitle(__('%1$s &ndash; %2$s', array(__('Symphony'), __('Export Articles'))));
-
-			$this->Form->appendChild($tableActions);
-		}
-
-	}
