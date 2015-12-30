@@ -281,13 +281,15 @@
 					$this->apiContext
 				);
 
+				$authend = ($this->mode == 'sandbox') ? '"authend": "sandbox",' : '';
+
 				$scriptInclude = '<span id="lippButton"></span>
 					<script src="https://www.paypalobjects.com/js/external/api.js"></script>
 					<script>
 					paypal.use( ["login"], function(login) {
 					  login.render ({
 						"appid": "'.$this->clientId.'",' .
-						($this->mode == 'sandbox') ? '"authend": "sandbox",' : '' .
+						$authend .
 						'"scopes": "openid profile email address phone https://uri.paypal.com/services/paypalattributes https://uri.paypal.com/services/expresscheckout",
 						"containerid": "lippButton",
 						"locale": "en-us",
