@@ -11,6 +11,11 @@
 	use PayPal\Api\PaymentExecution;
 	use PayPal\Api\Transaction;
 
+//login a member if available for authentication purposes
+$this->_context['member-login']='yes';
+
+
+
 if (isset($_GET['success']) && $_GET['success'] == 'true') {
 
 	$paymentId = $_GET['paymentId'];
@@ -38,6 +43,32 @@ if (isset($_GET['success']) && $_GET['success'] == 'true') {
 
 			$invoice->setData($fieldID,array('value'=>$state,'handle'=>General::createHandle($state)));
 			$invoice->commit();
+
+
+			$itemFieldID = FieldManager::fetchFieldIDFromElementName('item',$sectionID);
+			if (in_array("JCI Malta Membership", $invoice->getData($itemFieldID)['description'])){
+				//user paid for a membership kindly convert user to a member
+				$memberFieldID = FieldManager::fetchFieldIDFromElementName('member',$sectionID);
+				$memberID = $invoice->getData($memberFieldID)['relation_id'];
+
+				$member = current(EntryManager::fetch($memberID));
+				$roleFieldID = FieldManager::fetchFieldIDFromElementName('role',$member->get('section_id'));
+				$member->setData($roleFieldID,array('role_id'=>2));
+				$member->commit();
+
+				$emailID = FieldManager::fetchFieldIDFromElementName('email',$member->get('section_id'));
+				$email = $member->getData($emailID)['value'];
+
+				$member = ExtensionManager::getInstance('members')->getMemberDriver()->login(array('email'=>$email));
+			}
+
+            header('Location: ' . URL . '/register/?thankyou=1', true, 302);
+            exit;
+			var_dump($invoice->getData($itemFieldID)['description']);
+
+			// if item contains membership change the role of the user to a member.
+
+			echo($state);
 		} catch (Exception $ex) {
 			//getting payment
 			var_dump($ex);die;

@@ -28,6 +28,7 @@
 			// die('construct');
 			$this->clientId = Symphony::Configuration()->get('client-id','paypal');
 			$this->clientSecret = Symphony::Configuration()->get('client-secret','paypal');
+			$this->mode = Symphony::Configuration()->get('mode','paypal');
 			$this->apiContext = $this->generateApiContext($this->clientId, $this->clientSecret);
 		}
 
@@ -66,7 +67,7 @@
 			// based configuration
 			$apiContext->setConfig(
 				array(
-					'mode' => 'sandbox',
+					'mode' => $this->mode,
 					'log.LogEnabled' => true,
 					'log.FileName' => MANIFEST . '/logs/PayPal.log',
 					'cache.FileName' => MANIFEST . '/cache/PayPal',
@@ -285,9 +286,9 @@
 					<script>
 					paypal.use( ["login"], function(login) {
 					  login.render ({
-						"appid": "'.$this->clientId.'",
-						"authend": "sandbox",
-						"scopes": "openid profile email address phone https://uri.paypal.com/services/paypalattributes https://uri.paypal.com/services/expresscheckout",
+						"appid": "'.$this->clientId.'",' .
+						($this->mode == 'sandbox') ? '"authend": "sandbox",' : '' .
+						'"scopes": "openid profile email address phone https://uri.paypal.com/services/paypalattributes https://uri.paypal.com/services/expresscheckout",
 						"containerid": "lippButton",
 						"locale": "en-us",
 						"returnurl": "'.$baseUrl.'"
