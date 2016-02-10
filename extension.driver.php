@@ -180,7 +180,7 @@
 
 			if (isset($items) && !empty($items)){
 
-				$baseUrl = 'http://jci.dev/maze/extension/paypal/payment';
+				$baseUrl = SYMPHONY_URL . '/extension/paypal/payment';
 
 				$payer = new Payer();
 				$payer->setPaymentMethod("paypal");
