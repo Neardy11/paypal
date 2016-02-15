@@ -25,7 +25,7 @@ if (isset($_GET['success']) && $_GET['success'] == 'true') {
 	$execution->setPayerId($_GET['PayerID']);
 
 	try {
-		// $result = $payment->execute($execution, $paypalExtension->getApiContext());
+		$result = $payment->execute($execution, $paypalExtension->getApiContext());
 
 		try {
 			$payment = Payment::get($paymentId, $paypalExtension->getApiContext());
