@@ -24,7 +24,7 @@ use PayPal\Api\Transaction;
 // used to fund a payment.
 $card = new CreditCard();
 $card->setType("visa")
-    ->setNumber("4148529247832259")
+    ->setNumber("4669424246660779")
     ->setExpireMonth("11")
     ->setExpireYear("2019")
     ->setCvv2("012")
@@ -114,7 +114,7 @@ try {
     $payment->create($apiContext);
 } catch (Exception $ex) {
     // NOTE: PLEASE DO NOT USE RESULTPRINTER CLASS IN YOUR ORIGINAL CODE. FOR SAMPLE ONLY
- 	ResultPrinter::printError('Create Payment Using Credit Card. If 500 Exception, try creating a new Credit Card using <a href="https://ppmts.custhelp.com/app/answers/detail/a_id/750">Step 4, on this link</a>, and using it.', 'Payment', null, $request, $ex);
+    ResultPrinter::printError('Create Payment Using Credit Card. If 500 Exception, try creating a new Credit Card using <a href="https://ppmts.custhelp.com/app/answers/detail/a_id/750">Step 4, on this link</a>, and using it.', 'Payment', null, $request, $ex);
     exit(1);
 }
 

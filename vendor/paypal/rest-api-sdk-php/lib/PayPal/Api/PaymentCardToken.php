@@ -11,7 +11,7 @@ use PayPal\Common\PayPalModel;
  *
  * @package PayPal\Api
  *
- * @property string payment_card_id
+ * @property string credit_card_id
  * @property string external_customer_id
  * @property string last4
  * @property string type
@@ -23,13 +23,13 @@ class PaymentCardToken extends PayPalModel
     /**
      * ID of a previously saved Payment Card resource.
      *
-     * @param string $payment_card_id
+     * @param string $credit_card_id
      * 
      * @return $this
      */
-    public function setPaymentCardId($payment_card_id)
+    public function setPaymentCardId($credit_card_id)
     {
-        $this->payment_card_id = $payment_card_id;
+        $this->credit_card_id = $credit_card_id;
         return $this;
     }
 
@@ -40,7 +40,7 @@ class PaymentCardToken extends PayPalModel
      */
     public function getPaymentCardId()
     {
-        return $this->payment_card_id;
+        return $this->credit_card_id;
     }
 
     /**

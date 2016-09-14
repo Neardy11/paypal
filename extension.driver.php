@@ -16,13 +16,14 @@
 	use PayPal\Api\Payment;
 	use PayPal\Api\RedirectUrls;
 	use PayPal\Api\Transaction;
+	use PayPal\Api\CreditCard;
 
 	Class extension_Paypal extends Extension{
 
 		private $apiContext;
 		private $clientId;
 		private $clientSecret;
-		private $currency = 'EUR';
+		private $currency = 'GBP';
 
 		public function __construct() {
 			// die('construct');
@@ -93,8 +94,8 @@
 			Symphony::Database()->query("CREATE TABLE IF NOT EXISTS `tbl_paypal_token` (
 				`user_id` VARCHAR(255) NOT NULL ,
 				`refresh_token` VARCHAR(255) NOT NULL
-			PRIMARY KEY (`user_id`,`system`)
-			)ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;");
+			PRIMARY KEY (`user_id`)
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;");
 			
 			return true;
 		}
@@ -172,7 +173,7 @@
 			return $item;
 		}
 
-		public function pay(array $items = null, $invoiceNo = null) {
+		public function pay(array $items = null, $invoiceNo = null,$orderDescription = null, $paymentMethod = 'paypal',$fundingInstrument = null) {
 
 			if (!isset($invoiceNo)){
 				$invoiceNo = uniqid();
@@ -183,7 +184,11 @@
 				$baseUrl = SYMPHONY_URL . '/extension/paypal/payment';
 
 				$payer = new Payer();
-				$payer->setPaymentMethod("paypal");
+				$payer->setPaymentMethod($paymentMethod);
+
+				if (isset($fundingInstrument)){
+					$payer->setFundingInstruments(array($fundingInstrument));
+				}
 
 				$itemList = new ItemList();
 
@@ -206,14 +211,14 @@
 
 				$amount = new Amount();
 				$amount->setCurrency($this->currency)
-				    ->setTotal($subTotal + $taxTotal)
-				    ->setDetails($details);
+				    ->setTotal($subTotal + $taxTotal);
+				    // ->setDetails($details);
 
 				$transaction = new Transaction();
 				$transaction->setAmount($amount)
-					->setItemList($itemList)
-					->setDescription("JCI Malta Membership")
-					->setInvoiceNumber($invoiceNo);
+					// ->setItemList($itemList)
+					->setDescription($orderDescription);
+					// ->setInvoiceNumber($invoiceNo);
 
 				$redirectUrls = new RedirectUrls();
 				$redirectUrls->setReturnUrl("$baseUrl?success=true")
@@ -222,15 +227,19 @@
 				$payment = new Payment();
 				$payment->setIntent("sale")
 					->setPayer($payer)
-					->setRedirectUrls($redirectUrls)
 					->setTransactions(array($transaction));
+
+				if ($paymentMethod == 'paypal'){	
+					$payment->setRedirectUrls($redirectUrls);
+				}
 
 				$request = clone $payment;
 				try {
 					$payment->create($this->apiContext);
 				} catch (Exception $ex) {
 
-					var_dump($request);
+					var_dump($request->toJSON());
+					echo '<br/>';
 					var_dump($ex);die;
 					return "error";
 					//log the error
@@ -240,8 +249,11 @@
 
 				$return = array(
 					'id' => $payment->getId(), 
-					'link' =>$payment->getApprovalLink() 
+					'link' =>$payment->getApprovalLink(),
+					'state' => $payment->getState()
 				);
+
+				//should probably store something in the logs for each transaction successful/failed
 
 				return $return;
 
