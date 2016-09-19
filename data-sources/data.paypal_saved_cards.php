@@ -37,7 +37,7 @@ class datasourcepaypal_saved_cards extends Datasource
 
     public function execute(&$param_pool)
     {
-
+        $result = new XMLElement($this->dsParamROOTELEMENT);
 
         /// ### List All Credit Cards
         // (See bootstrap.php for more on `ApiContext`)
@@ -58,6 +58,17 @@ class datasourcepaypal_saved_cards extends Datasource
                     "external_customer_id" => $member  // Filtering by MerchantId set during CreateCreditCard.
                 );
                 $cards = CreditCard::all($params, $paypal->getApiContext());
+
+                foreach ($cards->getItems() as $key => $card) {
+                    $cardNumber = rtrim(chunk_split($card->getNumber(), 4, '-'), '-');
+                    $cardDetailsXML = new XMLElement('entry',$cardNumber,array(
+                                                                        'id'=>$card->getId(), 
+                                                                        'month'=>$card->getExpireMonth(), 
+                                                                        'year'=>$card->getExpireYear(), 
+                                                                        'type'=>$card->getType(), 
+                                                                    ));
+                    $result->appendChild($cardDetailsXML);
+                }
             }
         } catch (Exception $ex) {
             // NOTE: PLEASE DO NOT USE RESULTPRINTER CLASS IN YOUR ORIGINAL CODE. FOR SAMPLE ONLY
@@ -67,18 +78,7 @@ class datasourcepaypal_saved_cards extends Datasource
             exit(1);
         }
         
-        $result = new XMLElement($this->dsParamROOTELEMENT);
-
-        foreach ($cards->getItems() as $key => $card) {
-            $cardNumber = rtrim(chunk_split($card->getNumber(), 4, '-'), '-');
-            $cardDetailsXML = new XMLElement('entry',$cardNumber,array(
-                                                                'id'=>$card->getId(), 
-                                                                'month'=>$card->getExpireMonth(), 
-                                                                'year'=>$card->getExpireYear(), 
-                                                                'type'=>$card->getType(), 
-                                                            ));
-            $result->appendChild($cardDetailsXML);
-        }
+       
         return $result;
     }
 }
