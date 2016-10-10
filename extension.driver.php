@@ -236,24 +236,22 @@
 				$request = clone $payment;
 				try {
 					$payment->create($this->apiContext);
+
+
+					$return = array(
+						'id' => $payment->getId(), 
+						'link' =>$payment->getApprovalLink(),
+						'state' => $payment->getState()
+					);
 				} catch (Exception $ex) {
 
-					var_dump($request->toJSON());
-					echo '<br/>';
-					var_dump($ex);die;
-					return "error";
-					//log the error
-					// echo("Error Creating Payment Using PayPal.", "Payment", null, $request, $ex);
-					// exit(1);
+					//paypal adds items in it's own log no need to do custom one
+					$return  = array(
+							'state' => 'exception'
+						);
+					$return = array_merge($return,json_decode($ex->getData(),true));
+
 				}
-
-				$return = array(
-					'id' => $payment->getId(), 
-					'link' =>$payment->getApprovalLink(),
-					'state' => $payment->getState()
-				);
-
-				//should probably store something in the logs for each transaction successful/failed
 
 				return $return;
 
