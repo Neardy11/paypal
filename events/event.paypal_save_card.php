@@ -52,7 +52,7 @@
 		
 		protected function __trigger(){
 			$result = new XMLElement(self::ROOTELEMENT);
-			$card_details = $_POST['paypal_save_card'];
+			$card_details = $_POST['card'];
 
 			$paypal = ExtensionManager::getInstance('PayPal');
 
@@ -60,13 +60,13 @@
 			$member = $members->getMemberDriver()->getMemberID();
 			
 			$card = new CreditCard();
-			$card->setType($_POST['card']['card-type'])
-				->setNumber($_POST['card']['credit-card'])
-				->setExpireMonth($_POST['card']['month'])
-				->setExpireYear($_POST['card']['year'])
-				->setCvv2($_POST['card']['csc'])
-				->setFirstName($_POST['card']['first-name'])
-				->setLastName($_POST['card']['last-name']);
+			$card->setType($card_details['card-type'])
+				->setNumber($card_details['credit-card'])
+				->setExpireMonth($card_details['month'])
+				->setExpireYear($card_details['year'])
+				->setCvv2($card_details['csc'])
+				->setFirstName($card_details['first-name'])
+				->setLastName($card_details['last-name']);
 
 			// ### Additional Information
 			// Now you can also store the information that could help you connect
@@ -92,9 +92,17 @@
 				$card->create($paypal->getApiContext());
 			} catch (Exception $ex) {
 				// NOTE: PLEASE DO NOT USE RESULTPRINTER CLASS IN YOUR ORIGINAL CODE. FOR SAMPLE ONLY
-				var_dump($request);
-				var_dump($ex);die;
-				exit(1);
+				$errorDetails = json_decode($ex->getData(),true);
+				foreach ($errorDetails['details'] as $key => $value) {
+					$result->appendChild(new XMLElement('error', null, $value));
+				}
+
+ 				$result->setAttribute('result','error');
+ 				$result->setAttribute('error-name',$errorDetails['name']);
+				// var_dump($errorDetails);die;
+				// var_dump($request);
+				// var_dump($ex);die;
+				return $result;
 			}
  			
  			$cardId = $card->getId();
