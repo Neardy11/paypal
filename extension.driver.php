@@ -331,7 +331,7 @@
 				$agreement = new Agreement();
 				$agreement->setName($name)
 					->setDescription($description)
-					->setStartDate(date("Y-m-d\TH:i:s\Z"));
+					->setStartDate(date("Y-m-d\TH:i:s\Z",strtotime('+1 month')));
 				// Add Plan ID
 				// Please note that the plan Id should be only set in this case.
 				$plan = new Plan();
