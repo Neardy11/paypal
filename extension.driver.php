@@ -192,7 +192,7 @@
 				$shipping = 0;
 
 				foreach ($items as $key => $itemDetails) {
-					$subTotal += $itemDetails['price'];
+					$subTotal += $itemDetails['price'] * $itemDetails['quantity'];
 					if (isset($itemDetails['tax'])){
 						$taxTotal += $itemDetails['tax'];
 					}
