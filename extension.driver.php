@@ -19,6 +19,7 @@
 
 	//
 	use PayPal\Api\ChargeModel;
+	use PayPal\Api\OverrideChargeModel;
 	use PayPal\Api\Currency;
 	use PayPal\Api\MerchantPreferences;
 	use PayPal\Api\PaymentDefinition;
@@ -44,6 +45,7 @@
 
 			$this->plans = Symphony::Configuration()->get('plans','paypal');
 			$this->agreements = Symphony::Configuration()->get('agreements','paypal');
+			$this->members = Symphony::Configuration()->get('members','paypal');
 		}
 
 		public function getApiContext(){
@@ -229,11 +231,11 @@
 				$plan->setPaymentDefinitions(array($paymentDefinition));
 
 
-				// Charge Models
-				/*$chargeModel = new ChargeModel();
-				$chargeModel->setType('SHIPPING')
-					->setAmount(new Currency(array('value' => 10, 'currency' => 'USD')));
-				$paymentDefinition->setChargeModels(array($chargeModel));*/
+				// Add a 0 fee TAX Model so that it can be updated
+				$chargeModel = new ChargeModel();
+				$chargeModel->setType('TAX')
+					->setAmount(new Currency(array('value' => 0, 'currency' => $currency)));
+				$paymentDefinition->setChargeModels(array($chargeModel));
 
 				$merchantPreferences = new MerchantPreferences();
 				$baseUrl = $baseUrl = SYMPHONY_URL . '/extension/paypal/agreement';;
@@ -244,7 +246,7 @@
 					->setCancelUrl("$baseUrl?success=false")
 					->setAutoBillAmount("yes")
 					->setInitialFailAmountAction("CANCEL") // CONTINUE 
-					->setMaxFailAttempts("0")
+					->setMaxFailAttempts("2") // after 2 failed attempts cancel the agreement
 					// REQUIRED setup fee to take payment on 1st month - here is where a first-month discount can be provided
 					->setSetupFee(new Currency(array('value' => $price, 'currency' => $currency)));
 				$plan->setMerchantPreferences($merchantPreferences);
@@ -271,19 +273,54 @@
 			} else {
 				$plan = Plan::get($paypalPlanId, $this->apiContext);
 
-				$patch = new Patch();
-				$value = new PayPalModel('{
-					   "state":"ACTIVE"
-					 }');
-				$patch->setOp('replace')
-					->setPath('/')
-					->setValue($value);
-				$patchRequest = new PatchRequest();
-				$patchRequest->addPatch($patch);
+				if ($plan->getState() !== 'Active'){
+					$patch = new Patch();
+					$value = new PayPalModel('{
+						   "state":"ACTIVE"
+						 }');
+					$patch->setOp('replace')
+						->setPath('/')
+						->setValue($value);
+					$patchRequest = new PatchRequest();
+					$patchRequest->addPatch($patch);
+				}
 
-				$plan->update($patchRequest, $this->apiContext);
 
-				$plan = Plan::get($plan->getId(), $this->apiContext);
+				$paymentDefinition = current($plan->getPaymentDefinitions());
+				$chargeModels = $paymentDefinition->getChargeModels();
+
+				// this will only work if the plan is not yet active leave it here just in case
+				if (empty($chargeModels) && $plan->getState() !== 'Created'){
+					
+					$paymentDefinitionId = $paymentDefinition->getId();
+
+					$patch = new Patch();
+					$value = new PayPalModel('{
+				                "charge_models": [
+									{
+										"amount": {
+											"currency": "'.$currency.'",
+											"value": "0"
+										},
+										"type": "TAX"
+									}
+								]
+				            }');
+
+
+					$patch->setOp('add')
+						->setPath('/payment-definitions/' . $paymentDefinitionId )
+						->setValue($value);
+					$patchRequest = new PatchRequest();
+					$patchRequest->addPatch($patch);
+
+				}
+
+				if ($plan->getState() !== 'Active' || empty($chargeModels)){
+					$result = $plan->update($patchRequest, $this->apiContext);
+
+					$plan = Plan::get($plan->getId(), $this->apiContext);
+				}
 
 			}
 			
@@ -317,12 +354,15 @@
 
 				// get plan id
 				$agreementEntry = $context['entry'];
+
 				$planEntryId = $agreementEntry->getData($this->agreements['plan'])['relation_id'];
 
-				$planEntry = current(EntryManager::fetch($planEntryId));
+				$planEntry = current(EntryManager::fetch(current($planEntryId)));
 				$paypalPlanId = $planEntry->getData($this->plans['plan-id'])['value'];
 				$name = $planEntry->getData($this->plans['name'])['value'];
 				$description = $planEntry->getData($this->plans['description'])['value'];
+				$price = $planEntry->getData($this->plans['price'])['value'];
+				$currency = $planEntry->getData($this->plans['currency'])['value'];
 
 				if (empty($paypalPlanId)){
 					return;
@@ -341,6 +381,48 @@
 				$payer = new Payer();
 				$payer->setPaymentMethod('paypal');
 				$agreement->setPayer($payer);
+
+
+				// id user billing country is from the EU
+
+				$memberId = $agreementEntry->getData($this->agreements['member'])['relation_id'];
+
+				$memberEntry = current(EntryManager::fetch(current($memberId)));
+				$country = $memberEntry->getData($this->members['country'])['value'];
+				// var_dump($country);die;
+
+				$vatRates = DatasourceManager::create('vat')->vatRates;
+				$vatCode = $memberEntry->getData($this->members['vat'])['value'];
+
+				if ($vatRates[$country] && empty($vatCode)){
+					
+					$vatRate = $vatRates[$country];
+
+					$tax = round($price * $vatRate / 100,2);
+
+					// get tax chargemodel ID (ideally we save this somewhere for reference)
+					$planDetails = Plan::get($paypalPlanId, $this->apiContext);
+					$paymentDefinition = current($planDetails->getPaymentDefinitions());
+					$chargeModels = $paymentDefinition->getChargeModels();
+					$chargeID = current($chargeModels)->getId();
+
+
+					$chargeModel = new OverrideChargeModel();
+					$chargeModel->setChargeID($chargeID)
+						->setAmount(new Currency(array('value' => $tax, 'currency' => $currency)));
+					$agreement->setOverrideChargeModels(array($chargeModel));
+
+
+
+					// override_merchant_preferences so that we can calculate the first month with tax (or eventually pro rata)
+					$merchantPreferences = $planDetails->getMerchantPreferences();
+					$merchantPreferences->setSetupFee(new Currency(array('value' => $price + $tax, 'currency' => $currency)));
+					// $merchantPreferencesID = $merchantPreferences>getId();
+					$agreement->setOverrideMerchantPreferences($merchantPreferences);
+
+				}
+
+
 
 				try {
 					// Please note that as the agreement has not yet activated, we wont be receiving the ID just yet.
