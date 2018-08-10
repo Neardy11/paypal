@@ -36,33 +36,43 @@ if (isset($_GET['success']) && $_GET['success'] == 'true') {
 
 			$invoiceID = $transaction->getInvoiceNumber();
 
-			$invoice = current(EntryManager::fetch($invoiceID));
+			// $invoice = current(EntryManager::fetch($invoiceID));
 
-			$sectionID = $invoice->get('section_id');
-			$fieldID = FieldManager::fetchFieldIDFromElementName('status',$sectionID);
+			// var_dump($payment);
+			// var_dump('<br/>');
+			// var_dump($state);
+			// var_dump('<br/>');
+			// var_dump($transaction);
+			// var_dump('<br/>');
+			// var_dump($invoiceID);
+			// var_dump('<br/>');
+			// var_dump($invoice);die;
 
-			$invoice->setData($fieldID,array('value'=>$state,'handle'=>General::createHandle($state)));
-			$invoice->commit();
+			// $sectionID = $invoice->get('section_id');
+			// $fieldID = FieldManager::fetchFieldIDFromElementName('status',$sectionID);
+
+			// $invoice->setData($fieldID,array('value'=>$state,'handle'=>General::createHandle($state)));
+			// $invoice->commit();
 
 
-			$itemFieldID = FieldManager::fetchFieldIDFromElementName('item',$sectionID);
-			if (in_array("JCI Malta Membership", $invoice->getData($itemFieldID)['description'])){
-				//user paid for a membership kindly convert user to a member
-				$memberFieldID = FieldManager::fetchFieldIDFromElementName('member',$sectionID);
-				$memberID = $invoice->getData($memberFieldID)['relation_id'];
+			// $itemFieldID = FieldManager::fetchFieldIDFromElementName('item',$sectionID);
+			// if (in_array("JCI Malta Membership", $invoice->getData($itemFieldID)['description'])){
+			// 	//user paid for a membership kindly convert user to a member
+			// 	$memberFieldID = FieldManager::fetchFieldIDFromElementName('member',$sectionID);
+			// 	$memberID = $invoice->getData($memberFieldID)['relation_id'];
 
-				$member = current(EntryManager::fetch($memberID));
-				$roleFieldID = FieldManager::fetchFieldIDFromElementName('role',$member->get('section_id'));
-				$member->setData($roleFieldID,array('role_id'=>2));
-				$member->commit();
+			// 	$member = current(EntryManager::fetch($memberID));
+			// 	$roleFieldID = FieldManager::fetchFieldIDFromElementName('role',$member->get('section_id'));
+			// 	$member->setData($roleFieldID,array('role_id'=>2));
+			// 	$member->commit();
 
-				$emailID = FieldManager::fetchFieldIDFromElementName('email',$member->get('section_id'));
-				$email = $member->getData($emailID)['value'];
+			// 	$emailID = FieldManager::fetchFieldIDFromElementName('email',$member->get('section_id'));
+			// 	$email = $member->getData($emailID)['value'];
 
-				$member = ExtensionManager::getInstance('members')->getMemberDriver()->login(array('email'=>$email));
-			}
-
-            header('Location: ' . URL . '/register/?thankyou=1', true, 302);
+			// 	$member = ExtensionManager::getInstance('members')->getMemberDriver()->login(array('email'=>$email));
+			// }
+			
+            header('Location: ' . URL . '/donate-thank-you/', true, 302);
             exit;
 			var_dump($invoice->getData($itemFieldID)['description']);
 

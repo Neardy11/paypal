@@ -15,6 +15,7 @@
 	use PayPal\Api\Payer;
 	use PayPal\Api\Payment;
 	use PayPal\Api\RedirectUrls;
+	use PayPal\Api\ShippingAddress;
 	use PayPal\Api\Transaction;
 
 	//
@@ -34,7 +35,7 @@
 		private $apiContext;
 		private $clientId;
 		private $clientSecret;
-		private $currency = 'EUR';
+		private $currency = 'USD';
 
 		public function __construct() {
 			// die('construct');
@@ -124,7 +125,7 @@
 		/**
 		 * Update
 		 */
-		public function update() {
+		public function update($previousVersion = false) {
 			$this->install();
 		}
 
@@ -511,35 +512,34 @@
 				$payer = new Payer();
 				$payer->setPaymentMethod("paypal");
 
-				$itemList = new ItemList();
+				$itemList = new ItemList();			
 
-				$subTotal = 0;
-				$taxTotal = 0;
-				$shipping = 0;
+				$item = new Item();
+				$item->setName($items[0]["name"])
+					->setPrice($items[0]["price"])
+					->setCurrency($items[0]["currency"])
+					->setQuantity(1);
+				$itemList->addItem($item);
 
-				foreach ($items as $key => $itemDetails) {
-					$subTotal += $itemDetails['price'] * $itemDetails['quantity'];
-					if (isset($itemDetails['tax'])){
-						$taxTotal += $itemDetails['tax'];
-					}
-					$itemList->addItem($this->paypalItemFromArray($itemDetails));
-				}
-
-				$details = new Details();
-				$details->setShipping($shipping)
-					->setTax($taxTotal)
-					->setSubtotal($subTotal);
+		
+				$shippingAddress = new ShippingAddress();
+				$shippingAddress->setRecipientName($items[0]["recipientName"])
+					->setDefaultAddress($items[0]["address"]);
+		
 
 				$amount = new Amount();
 				$amount->setCurrency($this->currency)
-					->setTotal($subTotal + $taxTotal)
-					->setDetails($details);
+					->setTotal($items[0]["price"]);
+					// ->setDetails($details);
 
 				$transaction = new Transaction();
 				$transaction->setAmount($amount)
 					->setItemList($itemList)
-					->setDescription("JCI Malta Membership")
+					// ->setItemList($item)
+					->setDescription("Forward Donate PayPal")
 					->setInvoiceNumber($invoiceNo);
+
+					// var_dump($transaction);die;
 
 				$redirectUrls = new RedirectUrls();
 				$redirectUrls->setReturnUrl("$baseUrl?success=true")
@@ -552,6 +552,7 @@
 					->setTransactions(array($transaction));
 
 				$request = clone $payment;
+				var_dump($this->apiContext);die;
 				try {
 					$payment->create($this->apiContext);
 				} catch (Exception $ex) {
