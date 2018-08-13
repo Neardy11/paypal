@@ -552,7 +552,7 @@
 					->setTransactions(array($transaction));
 
 				$request = clone $payment;
-				var_dump($this->apiContext);die;
+				// var_dump($this->apiContext);die;
 				try {
 					$payment->create($this->apiContext);
 				} catch (Exception $ex) {
