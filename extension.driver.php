@@ -530,16 +530,12 @@
 				$amount = new Amount();
 				$amount->setCurrency($this->currency)
 					->setTotal($items[0]["price"]);
-					// ->setDetails($details);
 
 				$transaction = new Transaction();
 				$transaction->setAmount($amount)
 					->setItemList($itemList)
-					// ->setItemList($item)
 					->setDescription("Forward Donate PayPal")
-					->setInvoiceNumber($invoiceNo);
-
-					// var_dump($transaction);die;
+					->setInvoiceNumber($invoiceNo);					
 
 				$redirectUrls = new RedirectUrls();
 				$redirectUrls->setReturnUrl("$baseUrl?success=true")
@@ -552,7 +548,6 @@
 					->setTransactions(array($transaction));
 
 				$request = clone $payment;
-				// var_dump($this->apiContext);die;
 				try {
 					$payment->create($this->apiContext);
 				} catch (Exception $ex) {
